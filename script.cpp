@@ -35,11 +35,13 @@ Vehicle titanicVehicle = 0;
 Vehicle titanicHeliVehicle = 0;
 
 
-Hash titanicPedHashLowClass[]= { 2359345766, 1268862154, 1268862154,1404403376,3865252245,2624589981,4030826507,1768677545,1021093698,2073775040,2890614022 };
+Hash titanicPedHashLowClass[]= { 2359345766, 1268862154, 1268862154,1404403376,3865252245,2624589981,4030826507,1768677545,2073775040,2890614022 };
 
 std::vector<Ped> titanicLowClassPeds;
 
 int scaleformTitanic;
+
+bool titanicIsFrozen = false;
 
 //bool isBitSet = IntBits(value).test(position);
 
@@ -205,7 +207,7 @@ void log_to_file(std::string message, bool bAppend) {
 
 
 void action_show_info_on_start(){
-	set_status_text("Titanic evacauation simulator");
+	set_status_text("Titanic evacuation simulator");
 }
 
 // Config file - test
@@ -1695,7 +1697,29 @@ void draw_menu() {
 	}
 
 	//5. Back to start
-	DRAW_TEXT("Explode titanic", 0.88, 0.888 - (0.04)*drawIndex, 0.3, 0.3, 0, false, false, false, false, textColorR, textColorG, textColorB, 200);
+	if (titanicIsFrozen) {
+		DRAW_TEXT("Titanic: Frozen", 0.88, 0.888 - (0.04)*drawIndex, 0.3, 0.3, 0, false, false, false, false, textColorR, textColorG, textColorB, 200);
+	}
+	else {
+		DRAW_TEXT("Titanic: Driveable", 0.88, 0.888 - (0.04)*drawIndex, 0.3, 0.3, 0, false, false, false, false, textColorR, textColorG, textColorB, 200);
+	}
+	
+	GRAPHICS::DRAW_RECT(0.93, 0.900 - (0.04)*drawIndex, 0.113, 0.034, bgColorR, bgColorG, bgColorB, 100);
+
+	if (menu_active_index == drawIndex) {
+		menu_active_action = MENU_ITEM_DRIVABLE_TITANIC;
+	}
+	drawIndex++;
+
+	if (menu_active_index == drawIndex) {
+		textColorR = 0, textColorG = 0, textColorB = 0, bgColorR = 255, bgColorG = 255, bgColorB = 255;
+	}
+	else {
+		textColorR = 255, textColorG = 255, textColorB = 255, bgColorR = 0, bgColorG = 0, bgColorB = 0;
+	}
+
+	//5. Back to start
+	DRAW_TEXT("Sink titanic", 0.88, 0.888 - (0.04)*drawIndex, 0.3, 0.3, 0, false, false, false, false, textColorR, textColorG, textColorB, 200);
 	GRAPHICS::DRAW_RECT(0.93, 0.900 - (0.04)*drawIndex, 0.113, 0.034, bgColorR, bgColorG, bgColorB, 100);
 
 	if (menu_active_index == drawIndex) {
@@ -5057,6 +5081,7 @@ void action_titanic_passengers_remove() {
 	log_to_file("action_titanic_heli_remove");
 
 	for (auto passenger : titanicLowClassPeds) {
+		ENTITY::SET_ENTITY_AS_MISSION_ENTITY(passenger, false, true);
 		PED::DELETE_PED(&passenger);
 	}
 }
@@ -5074,8 +5099,15 @@ void action_titanic_remove() {
 void action_titanic_explode(){
 	log_to_file("action_titanic_explode");
 	if (titanicVehicle != 0) {
-		ENTITY::FREEZE_ENTITY_POSITION(titanicVehicle, true);
-		VEHICLE::EXPLODE_VEHICLE(titanicVehicle, true, false);
+		ENTITY::FREEZE_ENTITY_POSITION(titanicVehicle, false);
+		ENTITY::SET_ENTITY_MAX_HEALTH(titanicVehicle, 1);
+		//VEHICLE::EXPLODE_VEHICLE(titanicVehicle, true, false);
+		VEHICLE::SET_VEHICLE_DAMAGE(titanicVehicle, 0.0, 0.0, 0.0, 1000.0, 100, 1);
+		ENTITY::SET_ENTITY_AS_MISSION_ENTITY(titanicHeliVehicle, false, true);
+		set_status_text("Attempting to sink the titanic");
+
+		int healthTitanic = ENTITY::GET_ENTITY_HEALTH(titanicVehicle);
+		log_to_file("Titanic health:" + std::to_string(healthTitanic));
 	}
 }
 
@@ -5108,12 +5140,18 @@ void titanic_draw_start_message() {
 
 
 void action_titanic_passengers_spawn() {
-	int nrLowClassPeds = 50; 
+	int nrLowClassPeds = 28; 
 
 	Vector3 lowclassLocation;
-	lowclassLocation.x = 3448.045654;
-	lowclassLocation.y = 5299.867188;
-	lowclassLocation.z = 18.622885;
+	lowclassLocation.x = 3448.196777;
+	lowclassLocation.y = 5298.392578;
+	lowclassLocation.z = 18.774931;
+	//lowclassLocation.x = 3448.045654;
+	//lowclassLocation.y = 5299.867188;
+	//lowclassLocation.z = 18.622885;
+	//lowclassLocation.x = 3460.509521;
+	//lowclassLocation.y = 5301.253906;
+	//lowclassLocation.z = 18.622885;
 
 
 	Vector3 location1;
@@ -5143,17 +5181,19 @@ void action_titanic_passengers_spawn() {
 			}
 		}
 		Ped passenger;
+
 		if (i < nrLowClassPeds / 2) {
 			passenger = PED::CREATE_PED(4, pedHash, location1.x, location1.y, location1.z, 0.0, 1, 1);
 		}
 		else {
 			passenger = PED::CREATE_PED(4, pedHash, location2.x, location2.y, location2.z, 0.0, 1, 1);
 		}
+		ENTITY::SET_ENTITY_AS_MISSION_ENTITY(passenger, true, true);
 
 		titanicLowClassPeds.push_back(passenger);
 
 		pedModelId++;
-		if (pedModelId > 10) {
+		if (pedModelId > 9) {
 			pedModelId = 0;
 		}
 	}
@@ -5164,17 +5204,64 @@ void action_titanic_passengers_spawn() {
 
 
 	WAIT(3000);
-	int i = 0;
-	for (auto passenger : titanicLowClassPeds) {
+	for (int i = 0; i < titanicLowClassPeds.size(); i++) {
 		//AI::TASK_WANDER_IN_AREA(passenger, lowclassLocation.x, lowclassLocation.y, lowclassLocation.z,50.0, 20.0, 10.0);
-		if (i < nrLowClassPeds / 2) {
-			AI::TASK_GO_STRAIGHT_TO_COORD(passenger, location2.x, location2.y, location2.z, 1.0, -1, 80, 0.5f);
+		 if (i < nrLowClassPeds / 2) {
+			AI::TASK_GO_STRAIGHT_TO_COORD(titanicLowClassPeds[i], location2.x, location2.y, location2.z, 1.0, -1, 80, 0.5f);
 		}
 		else {
-			AI::TASK_GO_STRAIGHT_TO_COORD(passenger, location1.x, location1.y, location1.z, 1.0, -1, 80, 0.5f);
+			AI::TASK_GO_STRAIGHT_TO_COORD(titanicLowClassPeds[i], location1.x, location1.y, location1.z, 1.0, -1, 80, 0.5f);
 		}
-		i++;
 	}
+
+
+	STREAMING::REQUEST_MODEL(1021093698);
+	DWORD ticksStart = GetTickCount();
+	while (!STREAMING::HAS_MODEL_LOADED(1021093698))
+	{
+		WAIT(0);
+		if (GetTickCount() - ticksStart > 5000) {
+			log_to_file("Failed to load GTAObject Hash:" + std::to_string(1021093698));
+			set_status_text("Failed to load objects");
+			return;
+		}
+	}
+
+	Ped mime = PED::CREATE_PED(4, 1021093698, lowclassLocation.x, lowclassLocation.y, lowclassLocation.z, 0.0, 1, 1);
+	titanicLowClassPeds.push_back(mime);
+	
+	ENTITY::SET_ENTITY_AS_MISSION_ENTITY(mime, true, true);
+
+	std::vector<Animation> animations = { getAnimationForShortcutIndex(16635) };
+	AnimationSequence m_animationSequence{ animations };
+	for (auto &animation : m_animationSequence.animationsInSequence) {
+	STREAMING::REQUEST_ANIM_DICT(animation.animLibrary);
+
+	DWORD ticksStart = GetTickCount();
+
+	while (!STREAMING::HAS_ANIM_DICT_LOADED(animation.animLibrary))
+	{
+		WAIT(0);
+		if (GetTickCount() > ticksStart + 5000) {
+			//duration will be 0 if it's not loaded
+			log_to_file("Ticks overflow2");
+			set_status_text("Could not load animation with code " + std::string(animation.animLibrary));
+			return;
+			}
+		}
+	}
+
+	TaskSequence task_seq = 1;
+	AI::OPEN_SEQUENCE_TASK(&task_seq);
+
+	//load animation dicts
+	for (auto &animation : m_animationSequence.animationsInSequence) {
+		AI::TASK_PLAY_ANIM(0, animation.animLibrary, animation.animName, 8.0f, -8.0f, animation.duration, animationFlag.id, 8.0f, 0, 0, 0);
+	}
+
+	AI::CLOSE_SEQUENCE_TASK(task_seq);
+	AI::TASK_PERFORM_SEQUENCE(mime, task_seq);
+	AI::CLEAR_SEQUENCE_TASK(&task_seq);
 
 }
 
@@ -5218,6 +5305,11 @@ void action_titanic_heli_spawn() {
 	VEHICLE::SET_VEHICLE_ENGINE_ON(titanicHeliVehicle, true, true, true);
 }
 
+void action_titanic_set_drivable(bool isDriveable) {
+	titanicIsFrozen = isDriveable;
+	ENTITY::FREEZE_ENTITY_POSITION(titanicVehicle, isDriveable);
+}
+
 void action_titanic_spawn() {
 	log_to_file("action_titanic_spawn");
 
@@ -5255,6 +5347,7 @@ void action_titanic_spawn() {
 
 	WAIT(4000);
 	ENTITY::FREEZE_ENTITY_POSITION(titanicVehicle, true);
+	titanicIsFrozen = true;
 	//post actions
 	//1. Spawn heli
 	action_titanic_heli_spawn();
@@ -6600,6 +6693,10 @@ void action_menu_active_selected() {
 	else if (menu_active_action == MENU_ITEM_EXPLODE_TITANIC) {
 		//autpilot is cancelled by switching to current actor
 		action_titanic_explode();
+	}
+	else if (menu_active_action == MENU_ITEM_DRIVABLE_TITANIC) {
+		//autpilot is cancelled by switching to current actor
+		action_titanic_set_drivable(!titanicIsFrozen);
 	}
 
 }
