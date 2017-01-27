@@ -179,7 +179,7 @@ const std::string currentDateTime() {
 void log_to_file(std::string message, bool bAppend) {
 	if (1) {
 		std::ofstream logfile;
-		char* filename = "scene_director.log";
+		char* filename = "titanic_evac.log";
 		if (bAppend)
 			logfile.open(filename, std::ios_base::app);
 		else
@@ -195,9 +195,7 @@ void log_to_file(std::string message, bool bAppend) {
 
 
 void action_show_info_on_start(){
-	set_status_text("Scene director 3.3 by elsewhat");
-	set_status_text("Duplicate actors in Rockstar editor? Restart GTA after recording");
-	set_status_text("Scene is setup mode");
+	set_status_text("Titanic evacauation simulator");
 }
 
 // Config file - test
