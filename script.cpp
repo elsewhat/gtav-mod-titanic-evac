@@ -19,6 +19,7 @@
 #include "tinyxml2.h"
 #include "StageLight.h"
 
+#include <random>
 #include <string>
 #include <ctime>
 #include <vector>
@@ -34,7 +35,9 @@ Vehicle titanicVehicle = 0;
 Vehicle titanicHeliVehicle = 0;
 
 
-int titanicPedHashLowClass[]= { 2359345766, 1268862154, 1268862154,1404403376,3865252245,2624589981,4030826507,1768677545,1021093698,2073775040,2890614022 };
+Hash titanicPedHashLowClass[]= { 2359345766, 1268862154, 1268862154,1404403376,3865252245,2624589981,4030826507,1768677545,1021093698,2073775040,2890614022 };
+
+std::vector<Ped> titanicLowClassPeds;
 
 //bool isBitSet = IntBits(value).test(position);
 
@@ -5031,14 +5034,74 @@ void action_titanic_heli_remove() {
 		VEHICLE::DELETE_VEHICLE(&titanicHeliVehicle);
 	}
 }
+void action_titanic_passengers_remove() {
+	log_to_file("action_titanic_heli_remove");
+
+	for (auto passenger : titanicLowClassPeds) {
+		PED::DELETE_PED(&passenger);
+	}
+}
+
 
 void action_titanic_remove() {
 	log_to_file("action_titanic_remove");
 	if (titanicVehicle != 0) {
 		VEHICLE::DELETE_VEHICLE(&titanicVehicle);
 		action_titanic_heli_remove();
+		action_titanic_passengers_remove();
 	}
 }
+
+Hash titanic_get_random_ped(bool isLowClass) {
+	//TBD
+
+}
+
+
+void action_titanic_passengers_spawn() {
+	int nrLowClassPeds = 20; 
+
+	Vector3 lowclassLocation;
+	lowclassLocation.x = 3448.045654;
+	lowclassLocation.y = 5299.867188;
+	lowclassLocation.z = 18.622885;
+
+	int pedModelId = 0;
+
+	for (int i = 0; i < nrLowClassPeds; i++) {
+		Hash pedHash = titanicPedHashLowClass[pedModelId];
+		
+		STREAMING::REQUEST_MODEL(pedHash);
+		DWORD ticksStart = GetTickCount();
+		while (!STREAMING::HAS_MODEL_LOADED(pedHash))
+		{
+			WAIT(0);
+			if (GetTickCount() - ticksStart > 5000) {
+				log_to_file("Failed to load GTAObject Hash:" + std::to_string(pedHash));
+				set_status_text("Failed to load objects");
+				return;
+			}
+		}
+
+		Ped passenger = PED::CREATE_PED(4, pedHash, lowclassLocation.x, lowclassLocation.y, lowclassLocation.z , 0.0, 1, 1);
+		titanicLowClassPeds.push_back(passenger);
+
+
+
+
+		pedModelId++;
+		if (pedModelId > 10) {
+			pedModelId = 0;
+		}
+	}
+
+	WAIT(3000);
+	for (auto passenger : titanicLowClassPeds) {
+		AI::TASK_WANDER_STANDARD(passenger, 10.0f, 10);
+	}
+
+}
+
 
 
 
@@ -5119,6 +5182,7 @@ void action_titanic_spawn() {
 	//post actions
 	//1. Spawn heli
 	action_titanic_heli_spawn();
+	action_titanic_passengers_spawn();
 }
 
 
