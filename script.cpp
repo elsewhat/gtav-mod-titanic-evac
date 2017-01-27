@@ -29,6 +29,13 @@
 
 
 
+
+Vehicle titanicVehicle = 0;
+Vehicle titanicHeliVehicle = 0;
+
+
+int titanicPedHashLowClass[]= { 2359345766, 1268862154, 1268862154,1404403376,3865252245,2624589981,4030826507,1768677545,1021093698,2073775040,2890614022 };
+
 //bool isBitSet = IntBits(value).test(position);
 
 //Key attributes
@@ -42,8 +49,6 @@ DWORD key_menu_select = VK_NUMPAD5;
 DWORD key_menu_delete = VK_DELETE;
 DWORD key_menu_back = VK_NUMPAD0;
 char key_hud_str[256];
-
-
 
 
 
@@ -1650,6 +1655,40 @@ void draw_menu() {
 	else {
 		textColorR = 255, textColorG = 255, textColorB = 255, bgColorR = 0, bgColorG = 0, bgColorB = 0;
 	}
+
+	//4. Titanic
+	DRAW_TEXT("Create titanic", 0.88, 0.888 - (0.04)*drawIndex, 0.3, 0.3, 0, false, false, false, false, textColorR, textColorG, textColorB, 200);
+	GRAPHICS::DRAW_RECT(0.93, 0.900 - (0.04)*drawIndex, 0.113, 0.034, bgColorR, bgColorG, bgColorB, 100);
+
+	if (menu_active_index == drawIndex) {
+		menu_active_action = MENU_ITEM_SPAWN_TITANIC1;
+	}
+	drawIndex++;
+
+	if (menu_active_index == drawIndex) {
+		textColorR = 0, textColorG = 0, textColorB = 0, bgColorR = 255, bgColorG = 255, bgColorB = 255;
+	}
+	else {
+		textColorR = 255, textColorG = 255, textColorB = 255, bgColorR = 0, bgColorG = 0, bgColorB = 0;
+	}
+
+
+	//5. Back to start
+	DRAW_TEXT("Remove titanic", 0.88, 0.888 - (0.04)*drawIndex, 0.3, 0.3, 0, false, false, false, false, textColorR, textColorG, textColorB, 200);
+	GRAPHICS::DRAW_RECT(0.93, 0.900 - (0.04)*drawIndex, 0.113, 0.034, bgColorR, bgColorG, bgColorB, 100);
+
+	if (menu_active_index == drawIndex) {
+		menu_active_action = MENU_ITEM_REMOVE_TITANIC;
+	}
+	drawIndex++;
+
+	if (menu_active_index == drawIndex) {
+		textColorR = 0, textColorG = 0, textColorB = 0, bgColorR = 255, bgColorG = 255, bgColorB = 255;
+	}
+	else {
+		textColorR = 255, textColorG = 255, textColorB = 255, bgColorR = 0, bgColorG = 0, bgColorB = 0;
+	}
+
 
 	//3b. Save / Load
 	if (menu_active_index == drawIndex) {
@@ -4984,6 +5023,105 @@ void reset_ignore_player() {
 
 }
 
+
+void action_titanic_heli_remove() {
+	log_to_file("action_titanic_heli_remove");
+
+	if (titanicHeliVehicle != 0) {
+		VEHICLE::DELETE_VEHICLE(&titanicHeliVehicle);
+	}
+}
+
+void action_titanic_remove() {
+	log_to_file("action_titanic_remove");
+	if (titanicVehicle != 0) {
+		VEHICLE::DELETE_VEHICLE(&titanicVehicle);
+		action_titanic_heli_remove();
+	}
+}
+
+
+
+
+void action_titanic_heli_spawn() {
+	log_to_file("action_titanic_heli_spawn");
+	Hash titanicHeliHash = GAMEPLAY::GET_HASH_KEY("swift2");
+
+	Vector3 heliLocation;
+	heliLocation.x = 3333.384521;
+	heliLocation.y = 5300.418457;
+	heliLocation.z = 17.478956;
+
+	float heliHeading = 170.221130;
+
+	//remove if it already exist
+	if (titanicHeliHash != 0) {
+		action_titanic_heli_remove();
+	}
+
+	STREAMING::REQUEST_MODEL(titanicHeliHash);
+	DWORD ticksStart = GetTickCount();
+	while (!STREAMING::HAS_MODEL_LOADED(titanicHeliHash))
+	{
+		WAIT(0);
+		if (GetTickCount() - ticksStart > 5000) {
+			log_to_file("Failed to load GTAObject name:" + std::string("titanic2") + " Hash:" + std::to_string(titanicHeliHash));
+			set_status_text("Failed to load objects");
+			return;
+		}
+	}
+
+
+	//create vehicle
+	titanicHeliVehicle = VEHICLE::CREATE_VEHICLE(titanicHeliHash, heliLocation.x, heliLocation.y, heliLocation.z, heliHeading, 1, 1);
+	//make sure it doesn't get deleted
+	ENTITY::SET_ENTITY_AS_MISSION_ENTITY(titanicHeliVehicle, true, true);
+	VEHICLE::SET_VEHICLE_ENGINE_ON(titanicHeliVehicle, true, true, true);
+}
+
+void action_titanic_spawn() {
+	log_to_file("action_titanic_spawn");
+
+	Hash titanicHash = GAMEPLAY::GET_HASH_KEY("titanic2");
+	Vector3 titanicLocation;
+	titanicLocation.x = 3469.730713;
+	titanicLocation.y = 5311.895996;
+	titanicLocation.z = -1.806508;
+
+	float titanicHeading = 274.688873;
+
+
+	//remove if it already exist
+	if (titanicVehicle != 0) {
+		action_titanic_remove();
+	}
+
+	STREAMING::REQUEST_MODEL(titanicHash);
+	DWORD ticksStart = GetTickCount();
+	while (!STREAMING::HAS_MODEL_LOADED(titanicHash))
+	{
+		WAIT(0);
+		if (GetTickCount() - ticksStart > 5000) {
+			log_to_file("Failed to load GTAObject name:" + std::string("titanic2") + " Hash:" + std::to_string(titanicHash));
+			set_status_text("Failed to load objects");
+			return;
+		}
+	}
+	//create vehicle
+	titanicVehicle = VEHICLE::CREATE_VEHICLE(titanicHash, titanicLocation.x, titanicLocation.y, titanicLocation.z, titanicHeading, 1, 1);
+	//make sure it doesn't get deleted
+	ENTITY::SET_ENTITY_AS_MISSION_ENTITY(titanicVehicle, true, true);
+	//Add the player to the driver seat
+	PED::SET_PED_INTO_VEHICLE(PLAYER::PLAYER_PED_ID(), titanicVehicle, -1);
+
+	WAIT(4000);
+	ENTITY::FREEZE_ENTITY_POSITION(titanicVehicle, true);
+	//post actions
+	//1. Spawn heli
+	action_titanic_heli_spawn();
+}
+
+
 void action_add_prop_to_actor(Actor actor, ActorProp actorProp) {
 	Ped actorPed = actor.getActorPed();
 
@@ -6310,6 +6448,14 @@ void action_menu_active_selected() {
 	}
 	else if (menu_active_action == MENU_ITEM_FIRING_SQUAD) {
 		is_firing_squad_engaged = false;
+	}
+	else if (menu_active_action == MENU_ITEM_SPAWN_TITANIC1) {
+		//autpilot is cancelled by switching to current actor
+		action_titanic_spawn();
+	}
+	else if (menu_active_action == MENU_ITEM_REMOVE_TITANIC) {
+		//autpilot is cancelled by switching to current actor
+		action_titanic_remove();
 	}
 
 }

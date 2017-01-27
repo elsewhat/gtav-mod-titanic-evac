@@ -457,7 +457,7 @@ ActorVehicleMovementRecordingItem::ActorVehicleMovementRecordingItem(DWORD ticks
 
 std::string ActorVehicleMovementRecordingItem::toString()
 {
-	return ActorRecordingItem::toString() + " ActorVehicleMovementRecordingItem Vehicle " + std::to_string(m_vehicle) + " speed : " + std::to_string(m_speedInVehicle);
+	return ActorRecordingItem::toString() + " ActorVehicleMovementRecordingItem Vehicle " + std::to_string(m_vehicle) + " speed : " + std::to_string(m_speedInVehicle) + " location (" + std::to_string(m_location.x) + "," + std::to_string(m_location.y) + "," + std::to_string(m_location.z) + ") heading: "+std::to_string(m_vehicleHeading);
 }
 
 float ActorVehicleMovementRecordingItem::getSpeedInVehicle()

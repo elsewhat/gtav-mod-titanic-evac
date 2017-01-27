@@ -13,7 +13,7 @@ BirdsEyeMode::BirdsEyeMode()
 {
 	shouldExitMode = false;
 	shouldDrawRecordingMarkers = true;
-	cameraSpeedFactor = 0.1;
+	cameraSpeedFactor = 0.5;
 	camLastPos = {};
 }
 /**
@@ -1231,9 +1231,9 @@ bool BirdsEyeMode::checkInputMovement()
 		}
 		if (isMovement) {
 			if (is_key_pressed_for_run()) {
-				camDelta.x *= 3; 
-				camDelta.y *= 3;
-				camDelta.z *= 3;
+				camDelta.x *= 5; 
+				camDelta.y *= 5;
+				camDelta.z *= 5;
 			}
 			else if (is_key_pressed_for_crouch()) {
 				camDelta.x /= 20;
