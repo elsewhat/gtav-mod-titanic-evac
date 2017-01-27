@@ -39,6 +39,8 @@ Hash titanicPedHashLowClass[]= { 2359345766, 1268862154, 1268862154,1404403376,3
 
 std::vector<Ped> titanicLowClassPeds;
 
+int scaleformTitanic;
+
 //bool isBitSet = IntBits(value).test(position);
 
 //Key attributes
@@ -1691,6 +1693,23 @@ void draw_menu() {
 	else {
 		textColorR = 255, textColorG = 255, textColorB = 255, bgColorR = 0, bgColorG = 0, bgColorB = 0;
 	}
+
+	//5. Back to start
+	DRAW_TEXT("Explode titanic", 0.88, 0.888 - (0.04)*drawIndex, 0.3, 0.3, 0, false, false, false, false, textColorR, textColorG, textColorB, 200);
+	GRAPHICS::DRAW_RECT(0.93, 0.900 - (0.04)*drawIndex, 0.113, 0.034, bgColorR, bgColorG, bgColorB, 100);
+
+	if (menu_active_index == drawIndex) {
+		menu_active_action = MENU_ITEM_EXPLODE_TITANIC;
+	}
+	drawIndex++;
+
+	if (menu_active_index == drawIndex) {
+		textColorR = 0, textColorG = 0, textColorB = 0, bgColorR = 255, bgColorG = 255, bgColorB = 255;
+	}
+	else {
+		textColorR = 255, textColorG = 255, textColorB = 255, bgColorR = 0, bgColorG = 0, bgColorB = 0;
+	}
+	
 
 
 	//3b. Save / Load
@@ -5052,19 +5071,60 @@ void action_titanic_remove() {
 	}
 }
 
+void action_titanic_explode(){
+	log_to_file("action_titanic_explode");
+	if (titanicVehicle != 0) {
+		ENTITY::FREEZE_ENTITY_POSITION(titanicVehicle, true);
+		VEHICLE::EXPLODE_VEHICLE(titanicVehicle, true, false);
+	}
+}
+
 Hash titanic_get_random_ped(bool isLowClass) {
 	//TBD
 
 }
 
+void titanic_draw_start_message() {
+
+	if (GRAPHICS::HAS_SCALEFORM_MOVIE_LOADED(scaleformTitanic)) {
+		//log_to_file("MAKE TITANIC GREAT AGAIN!");
+		GRAPHICS::CALL_SCALEFORM_MOVIE_METHOD(scaleformTitanic, "CLEAR_ALL");
+		GRAPHICS::_PUSH_SCALEFORM_MOVIE_FUNCTION(scaleformTitanic, "SHOW_MISSION_PASSED_MESSAGE");
+
+		GRAPHICS::_BEGIN_TEXT_COMPONENT("STRING");
+		//UI::_ADD_TEXT_COMPONENT_STRING("MAKE TITANIC GREAT AGAIN!");
+		UI::_ADD_TEXT_COMPONENT_STRING("WASTED");
+		GRAPHICS::_END_TEXT_COMPONENT();
+		GRAPHICS::_PUSH_SCALEFORM_MOVIE_FUNCTION_PARAMETER_FLOAT(100);
+		GRAPHICS::_PUSH_SCALEFORM_MOVIE_FUNCTION_PARAMETER_BOOL(true);
+		GRAPHICS::_PUSH_SCALEFORM_MOVIE_FUNCTION_PARAMETER_FLOAT(0);
+		GRAPHICS::_PUSH_SCALEFORM_MOVIE_FUNCTION_PARAMETER_BOOL(true);
+
+		GRAPHICS::_POP_SCALEFORM_MOVIE_FUNCTION_VOID();
+
+		GRAPHICS::DRAW_SCALEFORM_MOVIE_FULLSCREEN(scaleformTitanic, 255, 255, 255, 255, 1);
+	}
+}
+
 
 void action_titanic_passengers_spawn() {
-	int nrLowClassPeds = 20; 
+	int nrLowClassPeds = 50; 
 
 	Vector3 lowclassLocation;
 	lowclassLocation.x = 3448.045654;
 	lowclassLocation.y = 5299.867188;
 	lowclassLocation.z = 18.622885;
+
+
+	Vector3 location1;
+	location1.x = 3536.134277;
+	location1.y = 5304.875977;
+	location1.z = 18.181227;
+
+	Vector3 location2;
+	location2.x = 3407.666260;
+	location2.y = 5293.563965;
+	location2.z = 18.827911;
 
 	int pedModelId = 0;
 
@@ -5082,12 +5142,15 @@ void action_titanic_passengers_spawn() {
 				return;
 			}
 		}
+		Ped passenger;
+		if (i < nrLowClassPeds / 2) {
+			passenger = PED::CREATE_PED(4, pedHash, location1.x, location1.y, location1.z, 0.0, 1, 1);
+		}
+		else {
+			passenger = PED::CREATE_PED(4, pedHash, location2.x, location2.y, location2.z, 0.0, 1, 1);
+		}
 
-		Ped passenger = PED::CREATE_PED(4, pedHash, lowclassLocation.x, lowclassLocation.y, lowclassLocation.z , 0.0, 1, 1);
 		titanicLowClassPeds.push_back(passenger);
-
-
-
 
 		pedModelId++;
 		if (pedModelId > 10) {
@@ -5095,9 +5158,22 @@ void action_titanic_passengers_spawn() {
 		}
 	}
 
+
+
+
+
+
 	WAIT(3000);
+	int i = 0;
 	for (auto passenger : titanicLowClassPeds) {
-		AI::TASK_WANDER_STANDARD(passenger, 10.0f, 10);
+		//AI::TASK_WANDER_IN_AREA(passenger, lowclassLocation.x, lowclassLocation.y, lowclassLocation.z,50.0, 20.0, 10.0);
+		if (i < nrLowClassPeds / 2) {
+			AI::TASK_GO_STRAIGHT_TO_COORD(passenger, location2.x, location2.y, location2.z, 1.0, -1, 80, 0.5f);
+		}
+		else {
+			AI::TASK_GO_STRAIGHT_TO_COORD(passenger, location1.x, location1.y, location1.z, 1.0, -1, 80, 0.5f);
+		}
+		i++;
 	}
 
 }
@@ -6521,6 +6597,10 @@ void action_menu_active_selected() {
 		//autpilot is cancelled by switching to current actor
 		action_titanic_remove();
 	}
+	else if (menu_active_action == MENU_ITEM_EXPLODE_TITANIC) {
+		//autpilot is cancelled by switching to current actor
+		action_titanic_explode();
+	}
 
 }
 
@@ -7153,6 +7233,7 @@ void main()
 			if (should_display_app_hud()) {
 				draw_instructional_buttons();
 				draw_menu();
+				titanic_draw_start_message();
 				//disable ALT key
 				CONTROLS::DISABLE_CONTROL_ACTION(0, 19, 1);
 			}
@@ -7217,10 +7298,15 @@ void ScriptMain()
 	GRAPHICS::REQUEST_STREAMED_TEXTURE_DICT("CommonMenu", 0);
 
 	scaleForm = GRAPHICS::REQUEST_SCALEFORM_MOVIE_INSTANCE("instructional_buttons");
+	scaleformTitanic = GRAPHICS::REQUEST_SCALEFORM_MOVIE("MP_BIG_MESSAGE_FREEMODE");
 	log_to_file("Waiting for instructional_buttons to load");
 	while (!GRAPHICS::HAS_SCALEFORM_MOVIE_LOADED(scaleForm)) {
 		WAIT(0);
 	}
+	while (!GRAPHICS::HAS_SCALEFORM_MOVIE_LOADED(scaleformTitanic)) {
+		WAIT(0);
+	}
+
 	log_to_file("instructional_buttons have loaded");
 
 	action_show_info_on_start();
